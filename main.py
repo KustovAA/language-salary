@@ -1,5 +1,6 @@
 from environs import Env
 import requests
+from terminaltables import AsciiTable
 
 
 def predict_rub_salary(salary_from=None, salary_to=None):
@@ -120,30 +121,49 @@ def get_average_salary_stat_superjob(vacancies):
     }
 
 
+def print_salary_info_superjob(languages, api_key):
+    table_data = [
+        ('Язык программирования', 'Вакансий найдено', 'Вакансий обработано', 'Средняя зарплата')
+    ]
+
+    for language in languages:
+        stat = get_average_salary_stat_superjob(
+            get_vacancies_by_language_superjob('Python', api_key=api_key)
+        )
+        table_data.append(
+            (language, stat['vacancies_found'], stat['vacancies_processed'], stat['average_salary'])
+        )
+
+    table = AsciiTable(table_data, 'SuperJob Moscow')
+    print(table.table)
+
+
+def print_salary_info_hh(languages):
+    table_data = [
+        ('Язык программирования', 'Вакансий найдено', 'Вакансий обработано', 'Средняя зарплата')
+    ]
+
+    for language in languages:
+        stat = get_average_salary_stat_hh(
+            get_vacancies_by_language_hh('Python')
+        )
+        table_data.append(
+            (language, stat['vacancies_found'], stat['vacancies_processed'], stat['average_salary'])
+        )
+
+    table = AsciiTable(table_data, 'HeadHunter Moscow')
+    print(table.table)
+
 def main():
     env = Env()
     env.read_env()
-    superjob_secret_key = env.str("SUPERJOB_SECRET_KEY") 
+    superjob_secret_key = env.str("SUPERJOB_SECRET_KEY")
 
     languages = ['Python', 'Java', 'Golang', 'Javascript', 'Ruby', 'PHP', 'C++', '1С']
 
-    print('+SuperJob Moscow--------+------------------+---------------------+------------------+')
-    print('| Язык программирования | Вакансий найдено | Вакансий обработано | Средняя зарплата |')
-    print('+-----------------------+------------------+---------------------+------------------+')
-    for language in languages:
-        stat = get_average_salary_stat_superjob(
-            get_vacancies_by_language_superjob('Python', api_key=superjob_secret_key)
-        )
-        print(f"| {language:22}| {stat['vacancies_found']:17}| {stat['vacancies_processed']:20}| {stat['average_salary']:17}|")
+    print_salary_info_superjob(languages, superjob_secret_key)
 
-    print('+HeadHunter Moscow--------+------------------+---------------------+----------------+')
-    print('| Язык программирования | Вакансий найдено | Вакансий обработано | Средняя зарплата |')
-    print('+-----------------------+------------------+---------------------+------------------+')
-    for language in languages:
-        stat = get_average_salary_stat_hh(
-            get_vacancies_by_language_hh(language)
-        )
-        print(f"| {language:22}| {stat['vacancies_found']:17}| {stat['vacancies_processed']:20}| {stat['average_salary']:17}|")
+    print_salary_info_hh(languages)
 
 
 if __name__ == '__main__':
