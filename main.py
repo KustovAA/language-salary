@@ -31,10 +31,10 @@ def predict_rub_salary_for_superjob(vacancy):
 
 def get_vacancies_by_language_hh(language):
     url = 'https://api.hh.ru/vacancies'
-    MOSCOW_AREA_ID = 1
+    moscow_area_id = 1
     params = {
         'text': language,
-        'area': MOSCOW_AREA_ID,
+        'area': moscow_area_id,
         'only_with_salary': True,
         'per_page': 100
     }
