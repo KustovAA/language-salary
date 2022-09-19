@@ -49,7 +49,6 @@ def get_vacancies_by_language(language, settings):
             total = 0
 
             while has_next:
-                print("vacancies chunk is loading")
                 params["page"] = page
                 response = requests.get(url, params=params)
                 response.raise_for_status()
@@ -60,7 +59,6 @@ def get_vacancies_by_language(language, settings):
                 total = vacancies_search_result["found"]
                 page += 1
                 has_next = page < pages
-                print("vacancies chunk is loaded")
 
             return {"vacancies": vacancies, "total": total}
 
@@ -75,7 +73,6 @@ def get_vacancies_by_language(language, settings):
             total = 0
 
             while has_next:
-                print("vacancies chunk is loading")
                 params["page"] = page
                 response = requests.get(url, params=params, headers=headers)
                 response.raise_for_status()
@@ -86,7 +83,6 @@ def get_vacancies_by_language(language, settings):
                 total = vacancies_search_result["total"]
                 page += 1
                 has_next = more
-                print("vacancies chunk is loaded")
 
             return {"vacancies": vacancies, "total": total}
 
