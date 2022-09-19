@@ -48,11 +48,11 @@ def get_vacancies_by_language_hh(language):
         params['page'] = page
         response = requests.get(url, params=params)
         response.raise_for_status()
-        data = response.json()
+        vacancies_search_result = response.json()
 
-        pages = data['pages']
-        vacancies += data['items']
-        total = data['found']
+        pages = vacancies_search_result['pages']
+        vacancies += vacancies_search_result['items']
+        total = vacancies_search_result['found']
         page += 1
         has_next = page < pages
 
@@ -80,11 +80,11 @@ def get_vacancies_by_language_superjob(language, api_key):
         params['page'] = page
         response = requests.get(url, params=params, headers=headers)
         response.raise_for_status()
-        data = response.json()
+        vacancies_search_result = response.json()
 
-        more = data['more']
-        vacancies += data['objects']
-        total = data['total']
+        more = vacancies_search_result['more']
+        vacancies += vacancies_search_result['objects']
+        total = vacancies_search_result['total']
         page += 1
         has_next = more
 
@@ -128,8 +128,8 @@ def get_average_salary_stat_superjob(vacancies):
     }
 
 
-def print_salary_info_superjob(languages, api_key):
-    table_data = [
+def get_superjob_salaries_table(languages, api_key):
+    salaries_table = [
         ('Язык программирования', 'Вакансий найдено', 'Вакансий обработано', 'Средняя зарплата')
     ]
 
@@ -137,16 +137,16 @@ def print_salary_info_superjob(languages, api_key):
         stat = get_average_salary_stat_superjob(
             get_vacancies_by_language_superjob(language, api_key=api_key)
         )
-        table_data.append(
+        salaries_table.append(
             (language, stat['vacancies_found'], stat['vacancies_processed'], stat['average_salary'])
         )
 
-    table = AsciiTable(table_data, 'SuperJob Moscow')
-    print(table.table)
+    table = AsciiTable(salaries_table, 'SuperJob Moscow')
+    return table.table
 
 
-def print_salary_info_hh(languages):
-    table_data = [
+def get_hh_salaries_table(languages):
+    salaries_table = [
         ('Язык программирования', 'Вакансий найдено', 'Вакансий обработано', 'Средняя зарплата')
     ]
 
@@ -154,12 +154,12 @@ def print_salary_info_hh(languages):
         stat = get_average_salary_stat_hh(
             get_vacancies_by_language_hh(language)
         )
-        table_data.append(
+        salaries_table.append(
             (language, stat['vacancies_found'], stat['vacancies_processed'], stat['average_salary'])
         )
 
-    table = AsciiTable(table_data, 'HeadHunter Moscow')
-    print(table.table)
+    table = AsciiTable(salaries_table, 'HeadHunter Moscow')
+    return table.table
 
 def main():
     env = Env()
@@ -168,9 +168,9 @@ def main():
 
     languages = ['Python', 'Java', 'Golang', 'Javascript', 'Ruby', 'PHP', 'C++', '1С']
 
-    print_salary_info_superjob(languages, superjob_secret_key)
+    print(get_superjob_salaries_table(languages, superjob_secret_key))
 
-    print_salary_info_hh(languages)
+    print(get_hh_salaries_table(languages))
 
 
 if __name__ == '__main__':
