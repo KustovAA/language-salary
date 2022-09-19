@@ -44,21 +44,29 @@ class BaseSalaryService(ABC):
             'vacancies_found': vacancies['total']
         }
 
-    def get_rows_for_salaries_table(self):
+    def fetch_vacancies(self):
+        return [(language, self.get_vacancies_by_language(language)) for language in self.languages]
+
+    def get_rows_for_salaries_table(self, vacancies_stat):
         salaries_table = [
             ('Язык программирования', 'Вакансий найдено', 'Вакансий обработано', 'Средняя зарплата')
         ]
 
-        for language in self.languages:
-            stat = self.get_average_salary_stat(
-                self.get_vacancies_by_language(language)
-            )
+        for (language, vacancy_stat) in vacancies_stat:
             salaries_table.append(
-                (language, stat['vacancies_found'], stat['vacancies_processed'], stat['average_salary'])
+                (
+                    language,
+                    vacancy_stat['vacancies_found'],
+                    vacancy_stat['vacancies_processed'],
+                    vacancy_stat['average_salary']
+                )
             )
 
         return salaries_table
 
     def get_salaries_table(self):
-        table = AsciiTable(self.get_rows_for_salaries_table(), self.title)
+        vacancies = self.fetch_vacancies();
+        vacancies_stat = [self.get_average_salary_stat(vacancy) for vacancy in vacancies]
+
+        table = AsciiTable(self.get_rows_for_salaries_table(vacancies_stat), self.title)
         return table.table
