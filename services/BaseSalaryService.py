@@ -15,6 +15,7 @@ class BaseSalaryService(ABC):
     def predict_rub_salary(self, vacancy):
         pass
 
+    @staticmethod
     def predict_rub_salary_util(salary_from=None, salary_to=None):
         if salary_from and salary_to:
             return int((salary_from + salary_to) / 2)
