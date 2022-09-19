@@ -11,7 +11,7 @@ def main():
     languages = ['Python', 'Java', 'Golang', 'Javascript', 'Ruby', 'PHP', 'C++', '1С']
 
     superjobSalaryService = SuperjobSalaryService(languages, 'SuperJob Moscow', superjob_secret_key)
-    hhSalaryService = HHSalaryService(languages, 'SuperJob Moscow')
+    hhSalaryService = HHSalaryService(languages, 'HeadHunter Moscow')
 
     print(superjobSalaryService.get_salaries_table())
     print(hhSalaryService.get_salaries_table())
