@@ -134,14 +134,17 @@ def get_rows_for_salaries_table(vacancies_stat):
     return salaries_table
 
 
-def get_salaries_table(languages, settings):
+def get_salary_stat(languages, settings):
     vacancies = fetch_vacancies(languages, settings)
-    vacancies_stat = [
+
+    return [
         (language, get_average_salary_stat(vacancy, settings))
         for (language, vacancy) in vacancies
     ]
 
-    table = AsciiTable(get_rows_for_salaries_table(vacancies_stat), settings["title"])
+
+def get_salaries_table(salary_stat, title):
+    table = AsciiTable(get_rows_for_salaries_table(salary_stat), title)
     return table.table
 
 
@@ -152,20 +155,17 @@ def main():
 
     languages = ["Python", "Java", "Golang", "Javascript", "Ruby", "PHP", "C++", "1С"]
 
-    print(
-        get_salaries_table(languages, {"title": "HeadHunter Moscow", "strategy": "hh"})
-    )
+    salary_stat_hh = get_salary_stat(languages, {"strategy": "hh"})
+    print(get_salaries_table(salary_stat_hh, "HeadHunter Moscow"))
 
-    print(
-        get_salaries_table(
-            languages,
-            {
-                "title": "SuperJob Moscow",
-                "api_key": superjob_secret_key,
-                "strategy": "superjob",
-            },
-        )
+    salary_stat_superjob = get_salary_stat(
+        languages,
+        {
+            "api_key": superjob_secret_key,
+            "strategy": "superjob",
+        },
     )
+    print(get_salaries_table(salary_stat_superjob, "SuperJob Moscow"))
 
 
 if __name__ == "__main__":
