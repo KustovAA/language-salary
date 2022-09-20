@@ -16,83 +16,80 @@ def predict_rub_salary_util(salary_from=None, salary_to=None):
     return None
 
 
-def predict_rub_salary(vacancy, settings):
-    match settings["strategy"]:
-        case "hh":
-            salary = vacancy["salary"]
+def predict_rub_salary_hh(vacancy):
+    salary = vacancy["salary"]
 
-            if salary["currency"] != "RUR":
-                return None
+    if salary["currency"] != "RUR":
+        return None
 
-            return predict_rub_salary_util(salary["from"], salary["to"])
-        case "superjob":
-            return predict_rub_salary_util(
-                vacancy["payment_from"], vacancy["payment_to"]
-            )
+    return predict_rub_salary_util(salary["from"], salary["to"])
 
 
-def get_vacancies_by_language(language, settings):
-    match settings["strategy"]:
-        case "hh":
-            url = "https://api.hh.ru/vacancies"
-            moscow_area_id = 1
-            params = {
-                "text": language,
-                "area": moscow_area_id,
-                "only_with_salary": True,
-                "per_page": 100,
-            }
-
-            has_next = True
-            vacancies = []
-            page = 0
-            total = 0
-
-            while has_next:
-                params["page"] = page
-                response = requests.get(url, params=params)
-                response.raise_for_status()
-                vacancies_search_result = response.json()
-
-                pages = vacancies_search_result["pages"]
-                vacancies += vacancies_search_result["items"]
-                total = vacancies_search_result["found"]
-                page += 1
-                has_next = page < pages
-
-            return {"vacancies": vacancies, "total": total}
-
-        case "superjob":
-            url = "https://api.superjob.ru/2.0/vacancies"
-            params = {"town": "Москва", "keyword": language, "count": 100}
-            headers = {"X-Api-App-Id": settings["api_key"]}
-
-            has_next = True
-            vacancies = []
-            page = 0
-            total = 0
-
-            while has_next:
-                params["page"] = page
-                response = requests.get(url, params=params, headers=headers)
-                response.raise_for_status()
-                vacancies_search_result = response.json()
-
-                more = vacancies_search_result["more"]
-                vacancies += vacancies_search_result["objects"]
-                total = vacancies_search_result["total"]
-                page += 1
-                has_next = more
-
-            return {"vacancies": vacancies, "total": total}
+def predict_rub_salary_sj(vacancy):
+    return predict_rub_salary_util(vacancy["payment_from"], vacancy["payment_to"])
 
 
-def get_average_salary_stat(vacancies, settings):
+def get_vacancies_by_language_hh(language):
+    url = "https://api.hh.ru/vacancies"
+    moscow_area_id = 1
+    params = {
+        "text": language,
+        "area": moscow_area_id,
+        "only_with_salary": True,
+        "per_page": 100,
+    }
+
+    has_next = True
+    vacancies = []
+    page = 0
+    total = 0
+
+    while has_next:
+        params["page"] = page
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        vacancies_search_result = response.json()
+
+        pages = vacancies_search_result["pages"]
+        vacancies += vacancies_search_result["items"]
+        total = vacancies_search_result["found"]
+        page += 1
+        has_next = page < pages
+
+    return {"vacancies": vacancies, "total": total}
+
+
+def get_vacancies_by_language_sj(language, api_key):
+    url = "https://api.superjob.ru/2.0/vacancies"
+    params = {"town": "Москва", "keyword": language, "count": 100}
+    headers = {"X-Api-App-Id": api_key}
+
+    has_next = True
+    vacancies = []
+    page = 0
+    total = 0
+
+    while has_next:
+        params["page"] = page
+        response = requests.get(url, params=params, headers=headers)
+        response.raise_for_status()
+        vacancies_search_result = response.json()
+
+        more = vacancies_search_result["more"]
+        vacancies += vacancies_search_result["objects"]
+        total = vacancies_search_result["total"]
+        page += 1
+        has_next = more
+
+    return {"vacancies": vacancies, "total": total}
+
+
+def get_average_salary_stat(vacancies, predict_rub_salary):
     count = 0
     amount = 0
 
     for vacancy in vacancies["vacancies"]:
-        salary = predict_rub_salary(vacancy, settings)
+        salary = predict_rub_salary(vacancy)
         if salary:
             count += 1
             amount += int(salary)
@@ -102,13 +99,6 @@ def get_average_salary_stat(vacancies, settings):
         "vacancies_processed": count,
         "vacancies_found": vacancies["total"],
     }
-
-
-def fetch_vacancies(languages, settings):
-    return [
-        (language, get_vacancies_by_language(language, settings))
-        for language in languages
-    ]
 
 
 def get_rows_for_salaries_table(vacancies_stat):
@@ -134,17 +124,8 @@ def get_rows_for_salaries_table(vacancies_stat):
     return salaries_table
 
 
-def get_salary_stat(languages, settings):
-    vacancies = fetch_vacancies(languages, settings)
-
-    return [
-        (language, get_average_salary_stat(vacancy, settings))
-        for (language, vacancy) in vacancies
-    ]
-
-
-def get_salaries_table(salary_stat, title):
-    table = AsciiTable(get_rows_for_salaries_table(salary_stat), title)
+def create_salaries_table(table_rows, title):
+    table = AsciiTable(table_rows, title)
     return table.table
 
 
@@ -155,17 +136,28 @@ def main():
 
     languages = ["Python", "Java", "Golang", "Javascript", "Ruby", "PHP", "C++", "1С"]
 
-    salary_stat_hh = get_salary_stat(languages, {"strategy": "hh"})
-    print(get_salaries_table(salary_stat_hh, "HeadHunter Moscow"))
+    vacancies_hh = [
+        (language, get_vacancies_by_language_hh(language)) for language in languages
+    ]
+    salary_stat_hh = [
+        (language, get_average_salary_stat(vacancy, predict_rub_salary_hh))
+        for (language, vacancy) in vacancies_hh
+    ]
+    table_rows_hh = get_rows_for_salaries_table(salary_stat_hh)
+    salary_table_hh = create_salaries_table(table_rows_hh, "HeadHunter Moscow")
+    print(salary_table_hh)
 
-    salary_stat_superjob = get_salary_stat(
-        languages,
-        {
-            "api_key": superjob_secret_key,
-            "strategy": "superjob",
-        },
-    )
-    print(get_salaries_table(salary_stat_superjob, "SuperJob Moscow"))
+    vacancies_sj = [
+        (language, get_vacancies_by_language_sj(language, superjob_secret_key))
+        for language in languages
+    ]
+    salary_stat_sj = [
+        (language, get_average_salary_stat(vacancy, predict_rub_salary_sj))
+        for (language, vacancy) in vacancies_sj
+    ]
+    table_rows_sj = get_rows_for_salaries_table(salary_stat_sj)
+    salary_table_sj = create_salaries_table(table_rows_sj, "Superjob Moscow")
+    print(salary_table_sj)
 
 
 if __name__ == "__main__":
